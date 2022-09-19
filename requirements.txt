@@ -1,0 +1,10 @@
+altgraph==0.17.2
+future==0.18.2
+numpy==1.23.3
+pefile==2022.5.30
+periodic==2.1.1
+pyparsing==3.0.9
+pywin32==304
+pywin32-ctypes==0.2.0
+SQLAlchemy==0.7.7
+git+https://github.com/FBar000/BalChemEq.git#egg=BalChemEq
