@@ -5,6 +5,8 @@ This module contains scripts for calculating pH/OH values, acid/base constants, 
 import math
 import getMoles
 from decimal import Decimal
+from BalChemEq import BCE
+import numpy as np
 
 def calcBaseTitrantMass(pH, Ka, V, M, X):
     """
@@ -63,7 +65,8 @@ def titrateWASB(Va, Ma, Vb, Mb, pKa):
 
 def EQPpH(V, M, M2, pKa):
     """
-    Calculate the pH of a solution at it's equivalence point.
+    Calculate the pH of a solution at it's equivalence point. 
+    Assumes acid/base are both monoprotic.
 
     Args (Decimals):
         V: Volume of analyte    (Liters)
@@ -74,7 +77,73 @@ def EQPpH(V, M, M2, pKa):
     Return:
         pH (Decimal)
     """
-    return pKa + Decimal(math.log(M / M2, 10))
+    moles_to_convert = M * V
+    V_titrant = moles_to_convert / M2
+    Conc_conjugate = moles_to_convert / (V + V_titrant)
+    ICE = ICEDiagram({"HB": Conc_conjugate,
+                      "H": 0,
+                      "B": 0}, 
+                      "HB : H + B")
+
+def ICEDiagram(molarities, equation, K):
+    """
+    Returns the final row of an ICE diagram.
+    Assumes two reactants, =<two products
+
+    Args:
+        molarities (dict[Decimal]): a dictionary of the initial molarities of the species. Absentees assumed zero.
+        equation (string): an unbalanced chemical equation for the reaction
+        K (Decimal): The equilibrium constant
+    Return:
+        final_molarities (dict[Decimal]): the equilibrium concentrations
+    """
+    coefficients = BCE.solutionCoefficients(equation)
+    # decimalize everyting
+    decimalize(molarities)
+    decimalize(coefficients)
+    coefficients["null"] = 0
+    # assign indices to equation terms
+    term_list = equation.split(" ")
+    while len(term_list) < 4:
+        term_list.append("null")
+    # easy reference to coefficients
+    a, b, c, d = coefficients[term_list[0]], coefficients[term_list[1]], coefficients[term_list[2]], coefficients[term_list[3]]
+    # easy reference to molarities
+    A, B, C, D = molarities[term_list[0]], molarities[term_list[1]], molarities[term_list[2]], molarities[term_list[3]]
+    # first coef. in quadratic
+    X1 = determinantStep(a, c, b*K, d)
+    # second coef.
+    X2 = determinantStep(a, b, -A, -B) * K - determinantStep(c, d, -C, -D)
+    X2*= Decimal(-1)
+    # third coef.
+    X3 = determinantStep(A, C, B*K, D)
+    # Change
+    change = quadraticPosRoot(X1, X2, X3)
+    # Adjust signs of coefficients
+    coefficients[term_list[2]], coefficients[term_list[3]] = -coefficients[term_list[2]], -coefficients[term_list[3]]
+    # Pack solutions
+    final_molarities={}
+    for i in molarities:
+        final_molarities[i] = molarities[i] - change * coefficients[i]
+    return final_molarities
+
+def determinantStep(a, b, c, d):
+    "For use in quadratic solver only"
+    return a*d - b*c
+
+def decimalize(dict):
+    """
+    Convert dict values into Decimal types.
+
+    Return None.
+    """
+    for i in dict:
+        dict[i] = Decimal(dict[i])
+
+def quadraticPosRoot(a, b, c):
+    return (-b + math.sqrt(b**2 - 4*a*c)) / 2*a
+
+
 
 if __name__ == '__main__':
 
@@ -88,6 +157,6 @@ if __name__ == '__main__':
     for i in givens:
         givens[i]=Decimal(givens[i])
         
-    givens['pKa'] = Decimal(10^(-14)) / givens['pKa']
+    givens['pKa'] = Decimal(14) - givens['pKa']
 
     print(EQPpH(**givens))
