@@ -78,7 +78,7 @@ def EQPpH(M, M2, pKa):
         pH (Decimal)
     """
     x = math.log(M**(-1) + M2**(-1), 10)
-    return Decimal(0.5) (pKa + x)
+    return Decimal(0.5) * (pKa + x)
 
 def ICEDiagram(molarities, equation, K):
     """
