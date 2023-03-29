@@ -2,6 +2,7 @@
 This module contains scripts for calculating pH/OH values, acid/base constants, etc.
 """
 
+import math
 import getMoles
 from decimal import Decimal
 
@@ -46,33 +47,47 @@ def calcAcidTitrantMass(pH, Kb, V, M, X):
     cH = 10**(pH)
     return molar_mass * M * V / (cH * Ka) 
 
+def titrateWASB(Va, Ma, Vb, Mb, pKa):
+    """
+    Calculate the pH of a weak acid after titration with a strong base.
 
+    Args (Decimals):
+        Va, Vb: Volumes of acid and base    (Liters)
+        Ma, Mb: Masses of acid and base     (Molal)
+        pKa: Power of acid constant  
 
+    Return: 
+        pH (Decimal)
+    """
+    return pKa + Decimal(math.log((Ma * Va) / (Mb * Vb), 10))
+
+def EQPpH(V, M, M2, pKa):
+    """
+    Calculate the pH of a solution at it's equivalence point.
+
+    Args (Decimals):
+        V: Volume of analyte    (Liters)
+        M: Molarity of analyte  (Molal)
+        M2: Molarity of titrant  (Molal)
+        pKa: Analyte constant
+
+    Return:
+        pH (Decimal)
+    """
+    return pKa + Decimal(math.log(M / M2, 10))
 
 if __name__ == '__main__':
 
     givens = {
-        "pH": 3.66,
-        "K": 4.5*10**(-4),
-        "V": 0.3,
-        "M": 0.7,
-        "X": "KNO2"
+        "V": 0.22,
+        "M": 0.5901,
+        "M2": 135,
+        "pKa": 4.82
     }
 
     for i in givens:
-        if type(givens[i]) == float:
-            givens[i] = Decimal(givens[i])
+        givens[i]=Decimal(givens[i])
+        
+    givens['pKa'] = Decimal(10^(-14)) / givens['pKa']
 
-    print(calcAcidTitrantMass(
-                        givens["pH"],
-                        givens["K"],
-                        givens["V"],
-                        givens["M"],
-                        givens["X"]))
-    
-    print(calcBaseTitrantMass(
-                        givens["pH"],
-                        givens["K"],
-                        givens["V"],
-                        givens["M"],
-                        givens["X"]))
+    print(EQPpH(**givens))
