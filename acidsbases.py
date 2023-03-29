@@ -63,7 +63,7 @@ def titrateWASB(Va, Ma, Vb, Mb, pKa):
     """
     return pKa + Decimal(math.log((Ma * Va) / (Mb * Vb), 10))
 
-def EQPpH(V, M, M2, pKa):
+def EQPpH(M, M2, pKa):
     """
     Calculate the pH of a solution at it's equivalence point. 
     Assumes acid/base are both monoprotic.
@@ -77,13 +77,8 @@ def EQPpH(V, M, M2, pKa):
     Return:
         pH (Decimal)
     """
-    moles_to_convert = M * V
-    V_titrant = moles_to_convert / M2
-    Conc_conjugate = moles_to_convert / (V + V_titrant)
-    ICE = ICEDiagram({"HB": Conc_conjugate,
-                      "H": 0,
-                      "B": 0}, 
-                      "HB : H + B")
+    x = math.log(M**(-1) + M2**(-1), 10)
+    return Decimal(0.5) (pKa + x)
 
 def ICEDiagram(molarities, equation, K):
     """
