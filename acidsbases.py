@@ -53,6 +53,8 @@ def titrateWASB(Va, Ma, Vb, Mb, pKa):
     """
     Calculate the pH of a weak acid after titration with a strong base.
 
+    HA + B -> HB + A
+
     Args (Decimals):
         Va, Vb: Volumes of acid and base    (Liters)
         Ma, Mb: Masses of acid and base     (Molal)
@@ -61,7 +63,21 @@ def titrateWASB(Va, Ma, Vb, Mb, pKa):
     Return: 
         pH (Decimal)
     """
-    return pKa + Decimal(math.log((Ma * Va) / (Mb * Vb), 10))
+    acid_moles = Va * Ma
+    base_moles = Vb * Mb
+    if acid_moles >= base_moles:
+        x = acid_moles / base_moles
+        log = Decimal(math.log(1 / (x - 1), 10)) # Algebra simplifies to this
+        pH = pKa + log     # HH Equation
+    else: 
+        givens = {"A": acid_moles,
+                  "H": Decimal(0),
+                  "HA": Decimal(0)}
+        equation = "A + H : HA"
+        sols = ICEDiagram(givens, equation, pKa)
+        pH = -Decimal(math.log(sols["H"], 10))
+    return pH
+
 
 def EQPpH(M, M2, pKa):
     """
@@ -77,7 +93,10 @@ def EQPpH(M, M2, pKa):
     Return:
         pH (Decimal)
     """
-    x = math.log(M**(-1) + M2**(-1), 10)
+    print(M)
+    print(M2)
+    print(pKa)
+    x = Decimal(math.log(M**(-1) + M2**(-1), 10))
     return Decimal(0.5) * (pKa + x)
 
 def ICEDiagram(molarities, equation, K):
@@ -143,15 +162,11 @@ def quadraticPosRoot(a, b, c):
 if __name__ == '__main__':
 
     givens = {
-        "V": 0.22,
-        "M": 0.5901,
-        "M2": 135,
-        "pKa": 4.82
+        "M1": 0.65,
+        "V1": 119.5,
+        "M2": 0.88,
+        "V2": 100.6,
+        "pK": 4.89 
     }
-
-    for i in givens:
-        givens[i]=Decimal(givens[i])
-        
-    givens['pKa'] = Decimal(14) - givens['pKa']
-
-    print(EQPpH(**givens))
+    decimalize(givens)
+    print(titrateWASB(**givens))
