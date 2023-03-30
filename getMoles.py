@@ -156,7 +156,7 @@ def productsFromMoles(equation, reactant_amounts):
         
 def productsFromMass(equation, reactant_amounts):
     """
-    Compute the mass of the products produced in a chemical reaction between two quantities of reactant.s
+    Compute the mass of the products produced in a chemical reaction between two quantities of reactants.
 
     Arguments:
         equation (string): An equation that represents the chemical reaction.

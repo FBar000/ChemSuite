@@ -3,6 +3,7 @@ This module contains scripts for calculating pH/OH values, acid/base constants, 
 """
 
 import math
+import re
 import getMoles
 from decimal import Decimal
 from BalChemEq import BCE
@@ -49,6 +50,7 @@ def calcAcidTitrantMass(pH, Kb, V, M, X):
     cH = 10**(pH)
     return molar_mass * M * V / (cH * Ka) 
 
+# Buggy
 def titrateWASB(Va, Ma, Vb, Mb, pKa):
     """
     Calculate the pH of a weak acid after titration with a strong base.
@@ -70,15 +72,43 @@ def titrateWASB(Va, Ma, Vb, Mb, pKa):
         log = Decimal(math.log(1 / (x - 1), 10)) # Algebra simplifies to this
         pH = pKa + log     # HH Equation
     else: 
-        givens = {"A": acid_moles,
-                  "H": Decimal(0),
-                  "HA": Decimal(0)}
-        equation = "A + H : HA"
-        sols = ICEDiagram(givens, equation, pKa)
-        pH = -Decimal(math.log(sols["H"], 10))
+        base_moles -= acid_moles
+        OH_concentration = base_moles / (Va + Vb)
+        pH = 14 + Decimal(math.log(OH_concentration, 10))
     return pH
 
 
+def titrateWBSA(Va, Ma, Vb, Mb, pKa):
+    """
+    Calculate the pH of a weak base after titration with a strong acid.
+
+    B + HA -> HB+ + A-
+
+    Args (Decimals):
+        Va, Vb: Volumes of acid and base    (Liters)
+        Ma, Mb: Masses of acid and base     (Molal)
+        pKa: Power of acid constant  
+
+    Return: 
+        pH (Decimal)
+    """
+    base_moles = Vb * Mb
+    acid_moles = Va * Ma
+    # If reaction completes
+    if acid_moles >= base_moles:
+        remaining_acid = acid_moles - base_moles
+        r_acid_molarity = remaining_acid / (Va + Vb)
+        pH = -Decimal(math.log(r_acid_molarity, 10))
+    # If buffer solution
+    else: 
+        unreacted_base = base_moles - acid_moles
+        conj_acid = acid_moles
+        pH = pKa + Decimal(math.log((conj_acid / unreacted_base), 10))
+    return pH
+
+
+
+# Wierd with Becca
 def EQPpH(M, M2, pKa):
     """
     Calculate the pH of a solution at it's equivalence point. 
@@ -93,12 +123,11 @@ def EQPpH(M, M2, pKa):
     Return:
         pH (Decimal)
     """
-    print(M)
-    print(M2)
-    print(pKa)
     x = Decimal(math.log(M**(-1) + M2**(-1), 10))
     return Decimal(0.5) * (pKa + x)
 
+
+# Buggy
 def ICEDiagram(molarities, equation, K):
     """
     Returns the final row of an ICE diagram.
@@ -114,23 +143,28 @@ def ICEDiagram(molarities, equation, K):
     coefficients = BCE.solutionCoefficients(equation)
     # decimalize everyting
     decimalize(molarities)
-    decimalize(coefficients)
-    coefficients["null"] = 0
+    for i in coefficients:
+        coefficients[i] = Decimal(coefficients[i].item())
+    coefficients["null"] = Decimal(0)
     # assign indices to equation terms
-    term_list = equation.split(" ")
+    term_list = re.findall("[a-zA-Z]*", equation)  # buggy
+    term_list = [x for x in term_list if x != '']
+    # Catch nulls
     while len(term_list) < 4:
         term_list.append("null")
+    molarities['null'] = 0
+
     # easy reference to coefficients
     a, b, c, d = coefficients[term_list[0]], coefficients[term_list[1]], coefficients[term_list[2]], coefficients[term_list[3]]
     # easy reference to molarities
     A, B, C, D = molarities[term_list[0]], molarities[term_list[1]], molarities[term_list[2]], molarities[term_list[3]]
     # first coef. in quadratic
-    X1 = determinantStep(a, c, b*K, d)
+    X1 = determinantStep(a, c, d, b*K)
     # second coef.
-    X2 = determinantStep(a, b, -A, -B) * K - determinantStep(c, d, -C, -D)
+    X2 = determinantStep(a, b, -A, B) * K + determinantStep(c, d, -C, D)
     X2*= Decimal(-1)
     # third coef.
-    X3 = determinantStep(A, C, B*K, D)
+    X3 = determinantStep(A, D, C, B*K)
     # Change
     change = quadraticPosRoot(X1, X2, X3)
     # Adjust signs of coefficients
@@ -141,9 +175,11 @@ def ICEDiagram(molarities, equation, K):
         final_molarities[i] = molarities[i] - change * coefficients[i]
     return final_molarities
 
+
 def determinantStep(a, b, c, d):
     "For use in quadratic solver only"
     return a*d - b*c
+
 
 def decimalize(dict):
     """
@@ -154,19 +190,24 @@ def decimalize(dict):
     for i in dict:
         dict[i] = Decimal(dict[i])
 
+
 def quadraticPosRoot(a, b, c):
-    return (-b + math.sqrt(b**2 - 4*a*c)) / 2*a
+    return (-b + Decimal(math.sqrt(b**2 - 4*a*c))) / 2*a
 
 
 
 if __name__ == '__main__':
 
     givens = {
-        "M1": 0.65,
-        "V1": 119.5,
-        "M2": 0.88,
-        "V2": 100.6,
-        "pK": 4.89 
+        "Mb": 0.68,
+        "Ma": 0.21,
+        "Vb": 203.1,
+        "Va": 706.8,
+        "pKa": 14 - 3.19
     }
+    
     decimalize(givens)
-    print(titrateWASB(**givens))
+    
+
+    
+    print(titrateWBSA(**givens))
