@@ -78,7 +78,7 @@ def titrateWASB(Va, Ma, Vb, Mb, pKa):
     return pH
 
 
-def titrateWBSA(Va, Ma, Vb, Mb, pKa):
+def titrateWBSA(Va, Ma, Vb, Mb, pK):
     """
     Calculate the pH of a weak base after titration with a strong acid.
 
@@ -103,7 +103,10 @@ def titrateWBSA(Va, Ma, Vb, Mb, pKa):
     else: 
         unreacted_base = base_moles - acid_moles
         conj_acid = acid_moles
-        pH = pKa + Decimal(math.log((conj_acid / unreacted_base), 10))
+        x = Decimal(10**(-pK)) * (unreacted_base / conj_acid)
+        H = Decimal(10**(-14)) / x
+        pH = -Decimal(math.log(H, 10))
+
     return pH
 
 
@@ -199,15 +202,12 @@ def quadraticPosRoot(a, b, c):
 if __name__ == '__main__':
 
     givens = {
-        "Mb": 0.68,
-        "Ma": 0.21,
-        "Vb": 203.1,
-        "Va": 706.8,
-        "pKa": 14 - 3.19
+        "Vb": 234.3,
+        "Mb": 0.62,
+        "Ma": 0.41,
+        "pK": 2.89,
+        "Va": 399.7,
     }
     
     decimalize(givens)
-    
-
-    
     print(titrateWBSA(**givens))
