@@ -3,12 +3,8 @@ Scripts to solve ALEKS Ch16 problems
 """
 
 
-import math
-import re
-import getMoles
-from decimal import Decimal
+
 from BalChemEq import BCE
-import numpy as np
 import pyromat as pm
 
 
@@ -25,9 +21,20 @@ def equationEntropy(equation):
     reactants, products = BCE.processEquation(equation)
     p_entropy = sum([molecule[1] * getEntropy(molecule[0]) for molecule in products[0]])
     r_entropy = sum([molecule[1] * getEntropy(molecule[0]) for molecule in reactants[0]])
-    entropy = p_entropy - r_entropy
+    rxn_entropy = p_entropy - r_entropy
+    return rxn_entropy
+
+
+def getEntropy(molecule, temperature=273.15, pressure=1):
+    """
+    Get entropy (kJ/mol) for a molecule at a given temperature (K) and pressure (atm)
+    Arg: 
+        molecule (str)
+
+    Return:
+        entropy (float)
+    """
+    name = '.'.join('ig', molecule)
+    gas = pm.get(name)
+    entropy = gas.h(temperature, pressure)
     return entropy
-
-
-def getEntropy(molecule):
-    return
